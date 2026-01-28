@@ -28,6 +28,13 @@ export default tseslint.config(
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-floating-promises': 'warn',
       '@typescript-eslint/no-unsafe-argument': 'warn',
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+        },
+      ],
       'prettier/prettier': ['error', { endOfLine: 'auto' }],
     },
   },
@@ -40,6 +47,23 @@ export default tseslint.config(
       '@typescript-eslint/no-unsafe-call': 'off',
       '@typescript-eslint/no-unsafe-member-access': 'off',
       '@typescript-eslint/no-unsafe-argument': 'off',
+    },
+  },
+  // Disable "unsafe" rules for PrismaService (adapter-pg / Pool)
+  {
+    files: ['src/database/prisma.service.ts'],
+    rules: {
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-argument': 'off',
+    },
+  },
+  // Disable require-await for async mocks (payment providers)
+  {
+    files: ['src/modules/payments/providers/mocks/**/*.ts'],
+    rules: {
+      '@typescript-eslint/require-await': 'off',
     },
   },
 );
