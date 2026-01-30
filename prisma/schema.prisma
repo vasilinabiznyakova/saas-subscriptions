@@ -6,7 +6,6 @@ datasource db {
   provider = "postgresql"
 }
 
-
 //// ENUMS
 
 enum BillingPeriod {
@@ -46,9 +45,9 @@ model User {
   passwordHash String @map("password_hash")
   region       String
 
-  isActive     Boolean  @default(true) @map("is_active")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   subscriptions Subscription[]
 
@@ -56,11 +55,11 @@ model User {
 }
 
 model Plan {
-  id                  String  @id @default(uuid()) @db.Uuid
-  code                String  @unique
-  basePriceMonthly    Decimal @map("base_price_monthly")
+  id                  String   @id @default(uuid()) @db.Uuid
+  code                String   @unique
+  basePriceMonthly    Decimal  @map("base_price_monthly")
   pricePerSeatMonthly Decimal? @map("price_per_seat_monthly")
-  includedApiCalls    Int     @map("included_api_calls")
+  includedApiCalls    Int      @map("included_api_calls")
 
   subscriptions Subscription[]
 
@@ -83,9 +82,9 @@ model PromoCode {
 model Subscription {
   id String @id @default(uuid()) @db.Uuid
 
-  userId      String  @db.Uuid @map("user_id")
-  planId      String  @db.Uuid @map("plan_id")
-  promoCodeId String? @db.Uuid @map("promo_code_id")
+  userId      String  @map("user_id") @db.Uuid
+  planId      String  @map("plan_id") @db.Uuid
+  promoCodeId String? @map("promo_code_id") @db.Uuid
 
   billingPeriod BillingPeriod      @map("billing_period")
   seats         Int
@@ -106,26 +105,27 @@ model Subscription {
   @@index([userId], map: "idx_subscription_user_id")
   @@index([planId], map: "idx_subscription_plan_id")
   @@index([promoCodeId], map: "idx_subscription_promo_code_id")
-
   @@map("subscription")
 }
 
 model Payment {
   id String @id @default(uuid()) @db.Uuid
 
-  subscriptionId String @db.Uuid @map("subscription_id")
+  subscriptionId String          @map("subscription_id") @db.Uuid
   provider       PaymentProvider
   status         PaymentStatus
 
-  amount      Decimal
-  currency    String
-  providerRef String @map("provider_ref")
+  amount         Decimal
+  currency       String
+  providerRef    String  @map("provider_ref")
+
+  //Idempotency (client-provided)
+  idempotencyKey String @unique @map("idempotency_key")
 
   createdAt DateTime @default(now()) @map("created_at")
 
   subscription Subscription @relation(fields: [subscriptionId], references: [id])
 
   @@index([subscriptionId], map: "idx_payment_subscription_id")
-
   @@map("payment")
 }

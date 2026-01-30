@@ -2,6 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { Prisma, PromoType } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { CalculatePriceDto } from './dto/calculate-price.dto';
+import { PricingResult } from './pricing-result.type';
 import { roundMoney, toMoneyString } from '../../common/utils/money.util';
 
 const D = Prisma.Decimal;
@@ -11,7 +12,7 @@ const ANNUAL_DISCOUNT_RATE = new D(0.17);
 export class PricingService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async calculate(dto: CalculatePriceDto) {
+  async calculate(dto: CalculatePriceDto): Promise<PricingResult> {
     const plan = await this.prisma.plan.findUnique({
       where: { code: dto.planCode },
     });

@@ -76,6 +76,7 @@ CREATE TABLE "payment" (
     "amount" DECIMAL(65,30) NOT NULL,
     "currency" TEXT NOT NULL,
     "provider_ref" TEXT NOT NULL,
+    "idempotency_key" TEXT NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "payment_pkey" PRIMARY KEY ("id")
@@ -98,6 +99,9 @@ CREATE INDEX "idx_subscription_plan_id" ON "subscription"("plan_id");
 
 -- CreateIndex
 CREATE INDEX "idx_subscription_promo_code_id" ON "subscription"("promo_code_id");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "payment_idempotency_key_key" ON "payment"("idempotency_key");
 
 -- CreateIndex
 CREATE INDEX "idx_payment_subscription_id" ON "payment"("subscription_id");
