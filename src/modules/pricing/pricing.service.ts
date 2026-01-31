@@ -15,6 +15,11 @@ export class PricingService {
   async calculate(dto: CalculatePriceDto): Promise<PricingResult> {
     const plan = await this.prisma.plan.findUnique({
       where: { code: dto.planCode },
+      select: {
+        code: true,
+        basePriceMonthly: true,
+        pricePerSeatMonthly: true,
+      },
     });
 
     if (!plan) {
@@ -42,6 +47,13 @@ export class PricingService {
     if (!isAnnual && dto.promoCode) {
       const promo = await this.prisma.promoCode.findUnique({
         where: { code: dto.promoCode },
+        select: {
+          code: true,
+          type: true,
+          value: true,
+          isActive: true,
+          expiresAt: true,
+        },
       });
 
       const now = new Date();

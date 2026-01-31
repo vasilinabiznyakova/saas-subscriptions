@@ -165,4 +165,40 @@ describe('PricingService', () => {
       }),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
+
+  it('allows seats = 0 (e.g. Starter) and calculates price correctly', async () => {
+    prismaMock.plan.findUnique.mockResolvedValue({
+      code: 'STARTER',
+      basePriceMonthly: new D('29.99'),
+      pricePerSeatMonthly: null,
+      includedApiCalls: 1000,
+    });
+
+    prismaMock.promoCode.findUnique.mockResolvedValue({
+      code: 'WELCOME10',
+      type: PromoType.PERCENT,
+      value: new D('10'),
+      isActive: true,
+      expiresAt: null,
+    });
+
+    const res = await service.calculate({
+      planCode: 'STARTER',
+      billingPeriod: BillingPeriod.MONTHLY,
+      seats: 0,
+      promoCode: 'WELCOME10',
+    });
+
+    expect(res.subtotal).toBe('29.99');
+    expect(res.discounts.promo).toBe('3.00');
+    expect(res.discountTotal).toBe('3.00');
+    expect(res.total).toBe('26.99');
+
+    // promoApplied should be set for monthly promo
+    expect(res.discounts.promoApplied).toEqual({
+      code: 'WELCOME10',
+      type: PromoType.PERCENT,
+      value: '10',
+    });
+  });
 });
