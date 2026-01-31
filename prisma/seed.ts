@@ -116,27 +116,27 @@ async function main() {
       ),
     );
 
-    // Dev users
-    await Promise.all(
-      testUsers.map(async (u) => {
-        const passwordHash = await bcrypt.hash(u.password, 10);
+    // // Dev users
+    // await Promise.all(
+    //   testUsers.map(async (u) => {
+    //     const passwordHash = await bcrypt.hash(u.password, 10);
 
-        return tx.user.upsert({
-          where: { email: u.email },
-          update: {
-            region: u.region,
-            passwordHash,
-            isActive: true,
-          },
-          create: {
-            email: u.email,
-            region: u.region,
-            passwordHash,
-            isActive: true,
-          },
-        });
-      }),
-    );
+    //     return tx.user.upsert({
+    //       where: { email: u.email },
+    //       update: {
+    //         region: u.region,
+    //         passwordHash,
+    //         isActive: true,
+    //       },
+    //       create: {
+    //         email: u.email,
+    //         region: u.region,
+    //         passwordHash,
+    //         isActive: true,
+    //       },
+    //     });
+    //   }),
+    // );
   });
 
   const [plansCount, promoCount, usersCount] = await Promise.all([

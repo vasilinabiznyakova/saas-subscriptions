@@ -225,6 +225,7 @@ export class SubscriptionsService {
   async create(
     dto: CreateSubscriptionDto,
     idempotencyKey: string,
+    userId: string,
   ): Promise<CreateSubscriptionResponse> {
     if (!idempotencyKey || idempotencyKey.trim().length === 0) {
       throw new BadRequestException('Idempotency-Key header is required');
@@ -233,7 +234,7 @@ export class SubscriptionsService {
     this.logger.log(
       'Create subscription request',
       logMeta({
-        userId: dto.userId,
+        userId,
         planCode: dto.planCode,
         billingPeriod: dto.billingPeriod,
         seats: dto.seats ?? 0,
@@ -246,7 +247,7 @@ export class SubscriptionsService {
     const existing = await this.findPaymentByIdempotencyKey(idempotencyKey);
     if (existing) return this.buildReplayResponse(existing);
 
-    const user = await this.usersService.findById(dto.userId);
+    const user = await this.usersService.findById(userId);
     if (!user) throw new NotFoundException('User not found');
 
     const pricing = await this.pricingService.calculate({
@@ -259,6 +260,7 @@ export class SubscriptionsService {
     this.logger.log(
       'Pricing calculated',
       logMeta({
+        userId,
         planCode: dto.planCode,
         billingPeriod: dto.billingPeriod,
         subtotal: pricing.subtotal,
@@ -370,7 +372,7 @@ export class SubscriptionsService {
         'Failed to create subscription',
         logMeta({
           idempotencyKey,
-          userId: dto.userId,
+          userId,
           error: e instanceof Error ? e.message : String(e),
         }),
       );
@@ -379,7 +381,7 @@ export class SubscriptionsService {
     }
   }
 
-  //temporary pass userId strict later replace to req.user.id)
+  // Access control: userId is taken from JWT (req.user.id) and used in queries
   private readonly subscriptionDetailsArgs =
     Prisma.validator<Prisma.SubscriptionDefaultArgs>()({
       include: { payments: true, plan: true, promoCode: true },
