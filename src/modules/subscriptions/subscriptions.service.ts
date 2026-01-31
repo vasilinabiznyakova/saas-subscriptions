@@ -22,6 +22,7 @@ import { logMeta } from '../../common/utils/logger.utils';
 
 import { SubscriptionResponseDto } from './dto/subscription-response.dto';
 import { toSubscriptionResponse } from './subscriptions.mapper';
+import { CreateSubscriptionResponseDto } from './dto/create-subscription-response.dto';
 
 function hasUniqueTarget(target: unknown, field: string): target is string[] {
   return (
@@ -66,26 +67,6 @@ type ReplayPayment = {
     planCode: string;
     promoCode?: string;
   };
-};
-
-export type CreateSubscriptionResponse = {
-  subscriptionId: string;
-  status: SubscriptionStatus;
-  provider: ProviderEnum;
-  price: {
-    subtotal: string;
-    discountTotal: string;
-    total: string;
-    discounts: PricingResult['discounts'];
-  };
-  payment: {
-    paymentId: string;
-    status: PaymentStatus;
-    providerRef: string;
-    checkoutUrl: string;
-    idempotencyKey: string;
-  };
-  idempotentReplay: boolean;
 };
 
 @Injectable()
@@ -157,12 +138,12 @@ export class SubscriptionsService {
       checkoutUrl: string;
     };
     idempotentReplay: boolean;
-  }): CreateSubscriptionResponse {
+  }): CreateSubscriptionResponseDto {
     return {
       subscriptionId: params.subscriptionId,
       status: params.status,
       provider: params.provider,
-      price: {
+      pricing: {
         subtotal: params.pricing.subtotal,
         discountTotal: params.pricing.discountTotal,
         total: params.pricing.total,
@@ -181,7 +162,7 @@ export class SubscriptionsService {
 
   private async buildReplayResponse(
     existingPayment: ReplayPayment,
-  ): Promise<CreateSubscriptionResponse> {
+  ): Promise<CreateSubscriptionResponseDto> {
     const s = existingPayment.subscription;
 
     const pricing = await this.pricingService.calculate({
@@ -229,7 +210,7 @@ export class SubscriptionsService {
     dto: CreateSubscriptionDto,
     idempotencyKey: string,
     userId: string,
-  ): Promise<CreateSubscriptionResponse> {
+  ): Promise<CreateSubscriptionResponseDto> {
     if (!idempotencyKey || idempotencyKey.trim().length === 0) {
       throw new BadRequestException('Idempotency-Key header is required');
     }
@@ -311,7 +292,7 @@ export class SubscriptionsService {
             amount: new Prisma.Decimal(pricing.total),
             currency: 'USD',
             providerRef: paymentInit.providerRef,
-            idempotencyKey, // unique
+            idempotencyKey, // ✅ unique
           },
         });
 

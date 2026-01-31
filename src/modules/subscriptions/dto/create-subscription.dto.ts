@@ -1,16 +1,17 @@
-import { Transform } from 'class-transformer';
+import { Transform, TransformFnParams } from 'class-transformer';
 import { IsEnum, IsInt, IsOptional, IsString, Min } from 'class-validator';
 import { BillingPeriod } from '@prisma/client';
 
 export class CreateSubscriptionDto {
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim().toUpperCase() : '',
+  )
   @IsString()
   planCode!: string;
 
-  @Transform(({ value }: { value: unknown }): BillingPeriod => {
+  @Transform(({ value }: TransformFnParams): BillingPeriod => {
     if (typeof value !== 'string') return value as BillingPeriod;
-
-    const normalized = value.trim().toUpperCase();
-    return normalized as BillingPeriod;
+    return value.trim().toUpperCase() as BillingPeriod;
   })
   @IsEnum(BillingPeriod)
   billingPeriod!: BillingPeriod;
@@ -20,6 +21,9 @@ export class CreateSubscriptionDto {
   @Min(0)
   seats?: number;
 
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim().toUpperCase() : value,
+  )
   @IsOptional()
   @IsString()
   promoCode?: string;
