@@ -12,6 +12,7 @@ import { PrismaService } from '../../database/prisma.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { logMeta } from '../../common/utils/logger.utils';
+import { AuthResponse, AuthUser } from './auth.types';
 
 function hasUniqueTarget(target: unknown, field: string): target is string[] {
   return (
@@ -30,8 +31,7 @@ export class AuthService {
     private readonly jwt: JwtService,
   ) {}
 
-  async register(dto: RegisterDto) {
-    // dto.email and dto.region are already normalized in DTO via @Transform
+  async register(dto: RegisterDto): Promise<AuthResponse> {
     const passwordHash = await bcrypt.hash(dto.password, 10);
 
     try {
@@ -56,9 +56,14 @@ export class AuthService {
       const accessToken = await this.jwt.signAsync({
         sub: user.id,
         email: user.email,
+        region: user.region,
       });
 
-      return { user, accessToken };
+      const authUser: AuthUser = {
+        ...user,
+      };
+
+      return { user: authUser, accessToken };
     } catch (e) {
       if (
         e instanceof Prisma.PrismaClientKnownRequestError &&
@@ -86,8 +91,7 @@ export class AuthService {
     }
   }
 
-  async login(dto: LoginDto) {
-    // dto.email already normalized in DTO via @Transform
+  async login(dto: LoginDto): Promise<AuthResponse> {
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email },
       select: {
@@ -130,9 +134,19 @@ export class AuthService {
     const accessToken = await this.jwt.signAsync({
       sub: user.id,
       email: user.email,
+      region: user.region,
     });
 
     const { passwordHash: _passwordHash, ...safeUser } = user;
-    return { user: safeUser, accessToken };
+
+    const authUser: AuthUser = {
+      id: safeUser.id,
+      email: safeUser.email,
+      region: safeUser.region,
+      isActive: safeUser.isActive,
+      createdAt: safeUser.createdAt,
+    };
+
+    return { user: authUser, accessToken };
   }
 }

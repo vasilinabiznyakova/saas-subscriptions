@@ -23,7 +23,6 @@ import { JwtStrategy } from './jwt.strategy';
         }
 
         const expiresIn = config.get<string>('JWT_EXPIRES_IN') ?? '15m';
-        console.log('SSSSSSSS', expiresIn);
 
         if (!config.get<string>('JWT_EXPIRES_IN')) {
           logger.warn('JWT_EXPIRES_IN not set, using default 15m');
