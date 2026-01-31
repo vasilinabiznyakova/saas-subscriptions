@@ -20,6 +20,9 @@ import { PricingResult } from '../pricing/pricing-result.type';
 import { createPaymentProvider } from '../payments/payment-provider.factory';
 import { logMeta } from '../../common/utils/logger.utils';
 
+import { SubscriptionResponseDto } from './dto/subscription-response.dto';
+import { toSubscriptionResponse } from './subscriptions.mapper';
+
 function hasUniqueTarget(target: unknown, field: string): target is string[] {
   return (
     Array.isArray(target) &&
@@ -219,7 +222,7 @@ export class SubscriptionsService {
 
   /**
    * Idempotency-Key required
-   *subscription(PENDING) + payment(CREATED) in 1 trx
+   * subscription(PENDING) + payment(CREATED) in 1 trx
    * race-safe (P2002 -> replay)
    */
   async create(
@@ -308,7 +311,7 @@ export class SubscriptionsService {
             amount: new Prisma.Decimal(pricing.total),
             currency: 'USD',
             providerRef: paymentInit.providerRef,
-            idempotencyKey, // ✅ unique
+            idempotencyKey, // unique
           },
         });
 
@@ -347,7 +350,7 @@ export class SubscriptionsService {
         idempotentReplay: false,
       });
     } catch (e) {
-      //race-safe idempotency: unique violation по idempotency_key -> replay
+      // race-safe idempotency: unique violation по idempotency_key -> replay
       if (
         e instanceof Prisma.PrismaClientKnownRequestError &&
         e.code === 'P2002' &&
@@ -382,16 +385,41 @@ export class SubscriptionsService {
   }
 
   // Access control: userId is taken from JWT (req.user.id) and used in queries
-  private readonly subscriptionDetailsArgs =
+  private readonly subscriptionPublicArgs =
     Prisma.validator<Prisma.SubscriptionDefaultArgs>()({
-      include: { payments: true, plan: true, promoCode: true },
+      include: {
+        plan: {
+          select: {
+            code: true,
+            basePriceMonthly: true,
+            pricePerSeatMonthly: true,
+            includedApiCalls: true,
+          },
+        },
+        promoCode: {
+          select: {
+            code: true,
+            type: true,
+            value: true,
+          },
+        },
+        payments: {
+          take: 1,
+          orderBy: { createdAt: 'desc' },
+          select: {
+            id: true,
+            status: true,
+            provider: true,
+            amount: true,
+            currency: true,
+            providerRef: true,
+            createdAt: true,
+          },
+        },
+      },
     });
 
-  findAll(
-    userId: string,
-  ): Promise<
-    Prisma.SubscriptionGetPayload<typeof this.subscriptionDetailsArgs>[]
-  > {
+  async findAll(userId: string): Promise<SubscriptionResponseDto[]> {
     this.logger.log(
       'List subscriptions',
       logMeta({
@@ -399,19 +427,16 @@ export class SubscriptionsService {
       }),
     );
 
-    return this.prisma.subscription.findMany({
+    const items = await this.prisma.subscription.findMany({
       where: { userId },
-      ...this.subscriptionDetailsArgs,
+      ...this.subscriptionPublicArgs,
       orderBy: { createdAt: 'desc' },
     });
+
+    return items.map(toSubscriptionResponse);
   }
 
-  async findById(
-    id: string,
-    userId: string,
-  ): Promise<
-    Prisma.SubscriptionGetPayload<typeof this.subscriptionDetailsArgs>
-  > {
+  async findById(id: string, userId: string): Promise<SubscriptionResponseDto> {
     this.logger.log(
       'Get subscription',
       logMeta({
@@ -422,10 +447,11 @@ export class SubscriptionsService {
 
     const subscription = await this.prisma.subscription.findFirst({
       where: { id, userId },
-      ...this.subscriptionDetailsArgs,
+      ...this.subscriptionPublicArgs,
     });
 
     if (!subscription) throw new NotFoundException('Subscription not found');
-    return subscription;
+
+    return toSubscriptionResponse(subscription);
   }
 }
