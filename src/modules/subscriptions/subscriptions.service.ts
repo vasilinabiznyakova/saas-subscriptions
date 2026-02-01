@@ -19,18 +19,11 @@ import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { PricingResult } from '../pricing/pricing-result.type';
 import { createPaymentProvider } from '../payments/payment-provider.factory';
 import { logMeta } from '../../common/utils/logger.utils';
+import { isUniqueViolationOnField } from '../../common/utils/prisma-errors.util';
 
 import { SubscriptionResponseDto } from './dto/subscription-response.dto';
 import { toSubscriptionResponse } from './subscriptions.mapper';
 import { CreateSubscriptionResponseDto } from './dto/create-subscription-response.dto';
-
-function hasUniqueTarget(target: unknown, field: string): target is string[] {
-  return (
-    Array.isArray(target) &&
-    target.every((v) => typeof v === 'string') &&
-    target.includes(field)
-  );
-}
 
 function providerEnumByRegion(region: string): ProviderEnum {
   if (region === 'UA') return ProviderEnum.MONOBANK;
@@ -412,10 +405,7 @@ export class SubscriptionsService {
       if (
         e instanceof Prisma.PrismaClientKnownRequestError &&
         e.code === 'P2002' &&
-        hasUniqueTarget(
-          (e.meta as { target?: unknown } | undefined)?.target,
-          'idempotency_key',
-        )
+        isUniqueViolationOnField(e, 'idempotency_key')
       ) {
         this.logger.warn(
           'Idempotency unique constraint hit (race-safe replay)',

@@ -34,7 +34,7 @@ import { AuthUser } from '../auth/auth.types';
 type AuthedRequest = Request & { user: AuthUser };
 
 @ApiTags('subscriptions')
-@ApiBearerAuth()
+@ApiBearerAuth('access-token')
 @UseGuards(JwtAuthGuard)
 @Controller('subscriptions')
 export class SubscriptionsController {
