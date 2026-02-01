@@ -12,15 +12,9 @@ import { PrismaService } from '../../database/prisma.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { logMeta } from '../../common/utils/logger.utils';
-import { AuthResponse, AuthUser } from './auth.types';
+import { isUniqueViolationOnField } from '../../common/utils/prisma-errors.util';
 
-function hasUniqueTarget(target: unknown, field: string): target is string[] {
-  return (
-    Array.isArray(target) &&
-    target.every((v) => typeof v === 'string') &&
-    target.includes(field)
-  );
-}
+import { AuthResponse, AuthUser } from './auth.types';
 
 @Injectable()
 export class AuthService {
@@ -68,10 +62,7 @@ export class AuthService {
       if (
         e instanceof Prisma.PrismaClientKnownRequestError &&
         e.code === 'P2002' &&
-        hasUniqueTarget(
-          (e.meta as { target?: unknown } | undefined)?.target,
-          'email',
-        )
+        isUniqueViolationOnField(e, 'email')
       ) {
         this.logger.warn(
           'Registration failed (email already in use)',

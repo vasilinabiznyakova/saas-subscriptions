@@ -15,7 +15,7 @@ import {
 import { CalculatePriceResponseDto } from './dto/calculate-price-response.dto';
 
 @ApiTags('pricing')
-@ApiBearerAuth()
+@ApiBearerAuth('access-token')
 @UseGuards(JwtAuthGuard)
 @Controller('pricing')
 export class PricingController {
