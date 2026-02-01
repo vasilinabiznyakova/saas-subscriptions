@@ -8,7 +8,7 @@ CREATE TYPE "SubscriptionStatus" AS ENUM ('PENDING', 'ACTIVE', 'CANCELED', 'FAIL
 CREATE TYPE "PaymentProvider" AS ENUM ('MONOBANK', 'PIX', 'STRIPE');
 
 -- CreateEnum
-CREATE TYPE "PaymentStatus" AS ENUM ('CREATED', 'PAID', 'FAILED');
+CREATE TYPE "PaymentStatus" AS ENUM ('CREATED', 'SUCCEEDED', 'FAILED');
 
 -- CreateEnum
 CREATE TYPE "PromoType" AS ENUM ('PERCENT', 'FIXED');
@@ -63,6 +63,7 @@ CREATE TABLE "subscription" (
     "discount_total" DECIMAL(65,30) NOT NULL,
     "price_total" DECIMAL(65,30) NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "subscription_pkey" PRIMARY KEY ("id")
 );
@@ -75,9 +76,10 @@ CREATE TABLE "payment" (
     "status" "PaymentStatus" NOT NULL,
     "amount" DECIMAL(65,30) NOT NULL,
     "currency" TEXT NOT NULL,
-    "provider_ref" TEXT NOT NULL,
+    "provider_ref" TEXT,
     "idempotency_key" TEXT NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "payment_pkey" PRIMARY KEY ("id")
 );
@@ -99,6 +101,9 @@ CREATE INDEX "idx_subscription_plan_id" ON "subscription"("plan_id");
 
 -- CreateIndex
 CREATE INDEX "idx_subscription_promo_code_id" ON "subscription"("promo_code_id");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "payment_provider_ref_key" ON "payment"("provider_ref");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "payment_idempotency_key_key" ON "payment"("idempotency_key");
