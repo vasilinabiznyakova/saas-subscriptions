@@ -10,7 +10,19 @@ import {
 } from '@nestjs/common';
 import { Request } from 'express';
 
+import {
+  ApiBearerAuth,
+  ApiHeader,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
+import { CreateSubscriptionResponseDto } from './dto/create-subscription-response.dto';
+import { SubscriptionResponseDto } from './dto/subscription-response.dto';
+
 import { SubscriptionsService } from './subscriptions.service';
 import { IdempotencyKey } from '../../common/decorators/idempotency-key.decorator';
 
@@ -19,12 +31,27 @@ import { AuthUser } from '../auth/auth.types';
 
 type AuthedRequest = Request & { user: AuthUser };
 
+@ApiTags('subscriptions')
+@ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('subscriptions')
 export class SubscriptionsController {
   constructor(private readonly subscriptionsService: SubscriptionsService) {}
 
   @Post()
+  @ApiOperation({ summary: 'Create subscription (idempotent)' })
+  @ApiHeader({
+    name: 'Idempotency-Key',
+    required: true,
+    description: 'Unique key for safe retries',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Subscription created',
+    type: CreateSubscriptionResponseDto,
+  })
+  @ApiResponse({ status: 400, description: 'Validation error' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   create(
     @Req() req: AuthedRequest,
     @Body() dto: CreateSubscriptionDto,
@@ -34,6 +61,14 @@ export class SubscriptionsController {
   }
 
   @Get()
+  @ApiOperation({ summary: 'List user subscriptions' })
+  @ApiResponse({
+    status: 200,
+    description: 'OK',
+    type: SubscriptionResponseDto,
+    isArray: true,
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   findAll(
     @Req() req: AuthedRequest,
   ): ReturnType<SubscriptionsService['findAll']> {
@@ -41,6 +76,15 @@ export class SubscriptionsController {
   }
 
   @Get(':id')
+  @ApiOperation({ summary: 'Get subscription by id' })
+  @ApiParam({ name: 'id', format: 'uuid' })
+  @ApiResponse({
+    status: 200,
+    description: 'OK',
+    type: SubscriptionResponseDto,
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Not found' })
   findById(
     @Req() req: AuthedRequest,
     @Param('id', new ParseUUIDPipe()) id: string,
