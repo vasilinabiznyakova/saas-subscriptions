@@ -12,7 +12,9 @@ import { Request } from 'express';
 
 import {
   ApiBearerAuth,
+  ApiCreatedResponse,
   ApiHeader,
+  ApiOkResponse,
   ApiOperation,
   ApiParam,
   ApiResponse,
@@ -45,8 +47,7 @@ export class SubscriptionsController {
     required: true,
     description: 'Unique key for safe retries',
   })
-  @ApiResponse({
-    status: 201,
+  @ApiCreatedResponse({
     description: 'Subscription created',
     type: CreateSubscriptionResponseDto,
   })
@@ -62,8 +63,7 @@ export class SubscriptionsController {
 
   @Get()
   @ApiOperation({ summary: 'List user subscriptions' })
-  @ApiResponse({
-    status: 200,
+  @ApiOkResponse({
     description: 'OK',
     type: SubscriptionResponseDto,
     isArray: true,
@@ -78,8 +78,7 @@ export class SubscriptionsController {
   @Get(':id')
   @ApiOperation({ summary: 'Get subscription by id' })
   @ApiParam({ name: 'id', format: 'uuid' })
-  @ApiResponse({
-    status: 200,
+  @ApiOkResponse({
     description: 'OK',
     type: SubscriptionResponseDto,
   })

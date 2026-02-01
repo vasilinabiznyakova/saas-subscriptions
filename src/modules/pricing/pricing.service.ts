@@ -26,7 +26,7 @@ export class PricingService {
       throw new BadRequestException('Unknown plan');
     }
 
-    const seats = dto.seats;
+    const seats = dto.seats ?? 0;
 
     // Subtotal (monthly basis): base + seats * perSeat (if exists)
     const perSeat = plan.pricePerSeatMonthly ?? new D(0);
