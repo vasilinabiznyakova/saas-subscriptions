@@ -56,7 +56,7 @@ type ReplayPayment = {
   id: string;
   status: PaymentStatus;
   provider: ProviderEnum;
-  providerRef: string;
+  providerRef: string | null;
   idempotencyKey: string;
   subscription: {
     id: string;
@@ -132,10 +132,10 @@ export class SubscriptionsService {
     payment: {
       id: string;
       status: PaymentStatus;
-      providerRef: string;
       provider: ProviderEnum;
-      idempotencyKey: string;
+      providerRef: string;
       checkoutUrl: string;
+      idempotencyKey: string;
     };
     idempotentReplay: boolean;
   }): CreateSubscriptionResponseDto {
@@ -160,6 +160,46 @@ export class SubscriptionsService {
     };
   }
 
+  /**
+   * Ensures providerRef exists for an existing Payment row.
+   * This covers the edge case where the DB transaction succeeded but the process crashed
+   * before we persisted providerRef (because provider init is done outside the transaction).
+   *
+   * We intentionally keep this minimal: initialize provider again (mock provider should be
+   * idempotent on its own), update providerRef in DB, then re-fetch.
+   */
+  private async ensureProviderRefOrRecover(params: {
+    existing: ReplayPayment;
+    pricingTotal: string;
+    region: string;
+  }): Promise<ReplayPayment> {
+    if (params.existing.providerRef) return params.existing;
+
+    const providerClient = createPaymentProvider(params.region);
+
+    const paymentInit = await providerClient.initPayment({
+      amount: params.pricingTotal,
+      currency: 'USD',
+    });
+
+    await this.prisma.payment.update({
+      where: { id: params.existing.id },
+      data: { providerRef: paymentInit.providerRef },
+    });
+
+    const refreshed = await this.findPaymentByIdempotencyKey(
+      params.existing.idempotencyKey,
+    );
+
+    if (!refreshed || !refreshed.providerRef) {
+      // In a real system we'd have a stronger recovery strategy (retries, reconciliation).
+      // For this assignment, this indicates an unexpected inconsistency.
+      throw new Error('Failed to recover providerRef for idempotent replay');
+    }
+
+    return refreshed;
+  }
+
   private async buildReplayResponse(
     existingPayment: ReplayPayment,
   ): Promise<CreateSubscriptionResponseDto> {
@@ -181,21 +221,35 @@ export class SubscriptionsService {
       })}`,
     );
 
+    // providerRef is required by response contract; recover if needed.
+    const ensured = await this.ensureProviderRefOrRecover({
+      existing: existingPayment,
+      pricingTotal: pricing.total,
+      region:
+        s.provider === ProviderEnum.MONOBANK
+          ? 'UA'
+          : s.provider === ProviderEnum.PIX
+            ? 'BR'
+            : 'US',
+    });
+
+    const providerRef = ensured.providerRef;
+    if (!providerRef) {
+      throw new Error('providerRef is missing after recovery');
+    }
+
     return this.buildResponse({
       subscriptionId: s.id,
       status: s.status,
       provider: s.provider,
       pricing,
       payment: {
-        id: existingPayment.id,
-        status: existingPayment.status,
-        providerRef: existingPayment.providerRef,
-        provider: existingPayment.provider,
-        idempotencyKey: existingPayment.idempotencyKey,
-        checkoutUrl: checkoutUrlFromProviderRef(
-          existingPayment.provider,
-          existingPayment.providerRef,
-        ),
+        id: ensured.id,
+        status: ensured.status,
+        providerRef,
+        provider: ensured.provider,
+        idempotencyKey: ensured.idempotencyKey,
+        checkoutUrl: checkoutUrlFromProviderRef(ensured.provider, providerRef),
       },
       idempotentReplay: true,
     });
@@ -203,8 +257,8 @@ export class SubscriptionsService {
 
   /**
    * Idempotency-Key required
-   * subscription(PENDING) + payment(CREATED) in 1 trx
-   * race-safe (P2002 -> replay)
+   * subscription(PENDING) + payment(CREATED) are created in a DB transaction
+   * provider init is executed outside the DB transaction
    */
   async create(
     dto: CreateSubscriptionDto,
@@ -226,10 +280,6 @@ export class SubscriptionsService {
         idempotencyKey,
       }),
     );
-
-    // idempotency early-return
-    const existing = await this.findPaymentByIdempotencyKey(idempotencyKey);
-    if (existing) return this.buildReplayResponse(existing);
 
     const user = await this.usersService.findById(userId);
     if (!user) throw new NotFoundException('User not found');
@@ -257,7 +307,23 @@ export class SubscriptionsService {
     const providerEnum = providerEnumByRegion(user.region);
     const providerClient = createPaymentProvider(user.region);
 
+    // Idempotency early-return:
+    // If we already have a completed providerRef, replay immediately.
+    // If providerRef is missing (crash between DB commit and providerRef update),
+    // we will recover it and then replay.
+    const existing = await this.findPaymentByIdempotencyKey(idempotencyKey);
+    if (existing) {
+      const ensured = await this.ensureProviderRefOrRecover({
+        existing,
+        pricingTotal: pricing.total,
+        region: user.region,
+      });
+      if (ensured.providerRef) return this.buildReplayResponse(ensured);
+      // If still missing, continue into normal flow; DB unique constraint will handle.
+    }
+
     try {
+      // DB transaction contains only DB operations (no external network calls).
       const result = await this.prisma.$transaction(async (tx) => {
         const subscription = await tx.subscription.create({
           data: {
@@ -279,11 +345,6 @@ export class SubscriptionsService {
           },
         });
 
-        const paymentInit = await providerClient.initPayment({
-          amount: pricing.total,
-          currency: 'USD',
-        });
-
         const payment = await tx.payment.create({
           data: {
             subscriptionId: subscription.id,
@@ -291,24 +352,41 @@ export class SubscriptionsService {
             status: PaymentStatus.CREATED,
             amount: new Prisma.Decimal(pricing.total),
             currency: 'USD',
-            providerRef: paymentInit.providerRef,
-            idempotencyKey, // ✅ unique
+            providerRef: null,
+            idempotencyKey,
           },
         });
 
-        return { subscription, payment, checkoutUrl: paymentInit.checkoutUrl };
+        return { subscription, payment };
+      });
+
+      // External call is outside the transaction to avoid holding DB locks during network I/O.
+      const paymentInit = await providerClient.initPayment({
+        amount: pricing.total,
+        currency: 'USD',
+      });
+
+      // Persist providerRef after provider init.
+      const payment = await this.prisma.payment.update({
+        where: { id: result.payment.id },
+        data: { providerRef: paymentInit.providerRef },
       });
 
       this.logger.log(
         'Subscription and payment created',
         logMeta({
           subscriptionId: result.subscription.id,
-          paymentId: result.payment.id,
-          provider: result.payment.provider,
+          paymentId: payment.id,
+          provider: payment.provider,
           amount: pricing.total,
           idempotencyKey,
         }),
       );
+
+      const providerRef = payment.providerRef;
+      if (!providerRef) {
+        throw new Error('providerRef is missing after provider init update');
+      }
 
       return this.buildResponse({
         subscriptionId: result.subscription.id,
@@ -316,22 +394,21 @@ export class SubscriptionsService {
         provider: result.subscription.provider,
         pricing,
         payment: {
-          id: result.payment.id,
-          status: result.payment.status,
-          providerRef: result.payment.providerRef,
-          provider: result.payment.provider,
-          idempotencyKey: result.payment.idempotencyKey,
+          id: payment.id,
+          status: payment.status,
+          providerRef,
+          provider: payment.provider,
+          idempotencyKey: payment.idempotencyKey,
           checkoutUrl:
-            result.checkoutUrl ??
-            checkoutUrlFromProviderRef(
-              result.payment.provider,
-              result.payment.providerRef,
-            ),
+            paymentInit.checkoutUrl ??
+            checkoutUrlFromProviderRef(payment.provider, providerRef),
         },
         idempotentReplay: false,
       });
     } catch (e) {
-      // race-safe idempotency: unique violation по idempotency_key -> replay
+      // Race-safe idempotency:
+      // If another concurrent request won the unique constraint on idempotency_key,
+      // fetch the existing payment and replay (recover providerRef if needed).
       if (
         e instanceof Prisma.PrismaClientKnownRequestError &&
         e.code === 'P2002' &&
@@ -349,7 +426,14 @@ export class SubscriptionsService {
 
         const existing2 =
           await this.findPaymentByIdempotencyKey(idempotencyKey);
-        if (existing2) return this.buildReplayResponse(existing2);
+        if (existing2) {
+          const ensured = await this.ensureProviderRefOrRecover({
+            existing: existing2,
+            pricingTotal: pricing.total,
+            region: user.region,
+          });
+          return this.buildReplayResponse(ensured);
+        }
       }
 
       this.logger.error(

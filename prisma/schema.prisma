@@ -28,7 +28,7 @@ enum PaymentProvider {
 
 enum PaymentStatus {
   CREATED
-  PAID
+  SUCCEEDED
   FAILED
 }
 
@@ -96,6 +96,7 @@ model Subscription {
   priceTotal    Decimal @map("price_total")
 
   createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   user      User       @relation(fields: [userId], references: [id])
   plan      Plan       @relation(fields: [planId], references: [id])
@@ -117,12 +118,13 @@ model Payment {
 
   amount         Decimal
   currency       String
-  providerRef    String  @map("provider_ref")
 
-  //Idempotency (client-provided)
+  providerRef    String? @unique @map("provider_ref")
+
   idempotencyKey String @unique @map("idempotency_key")
 
   createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   subscription Subscription @relation(fields: [subscriptionId], references: [id])
 
