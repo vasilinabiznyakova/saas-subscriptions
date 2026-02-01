@@ -9,6 +9,9 @@ and a reliable API without unnecessary overengineering.
 📄 **Original assignment description:**  
 👉 [ASSIGNMENT.md](./ASSIGNMENT.md)
 
+🧠 **Theoretical questions:**  
+👉 [THEORY.md](./THEORY.md)  
+👉 [THEORY_UA.md](./THEORY_UA.md)
 ---
 
 ## Technology Stack
