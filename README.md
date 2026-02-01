@@ -150,6 +150,15 @@ The `dev:setup` command:
 * generates the Prisma client
 * runs the seed script
 
+### Docker
+
+Docker is used to run infrastructure dependencies (PostgreSQL) in the local development environment.
+This ensures a smooth and reproducible setup without requiring a local database installation.
+
+A Dockerfile for API deployment was intentionally not included, as it was not required by the assignment
+and would depend on specific production deployment requirements.
+
+
 ---
 
 ## Testing
