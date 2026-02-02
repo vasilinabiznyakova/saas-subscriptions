@@ -138,3 +138,4 @@ The expected result is a monolithic mini-app built with **NestJS** that implemen
 - **Seed script** with test plans and promo codes
 - **Swagger UI** available at `/api/docs` (optional)
 - Docker support (optional)
+
