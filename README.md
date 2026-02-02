@@ -112,7 +112,6 @@ Subscription creation is protected by the `Idempotency-Key` header.
 - The seed script initializes:
   - subscription plans
   - promo codes
-  - test users
 - The seed process is idempotent and safe to run multiple times
 
 ---
