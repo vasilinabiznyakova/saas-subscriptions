@@ -303,6 +303,15 @@ The `dev:setup` command:
 * generates the Prisma client
 * runs the seed script
 
+### Environment variables
+
+Create a `.env` file based on the provided `.env.example`:
+
+```bash
+cp .env.example .env
+```
+
+
 ### Docker
 
 Docker is used to run infrastructure dependencies (PostgreSQL) in the local development environment.
