@@ -8,13 +8,13 @@ import {
 
 export class PromoAppliedDto {
   @ApiProperty({ example: 'WELCOME10' })
-  code: string;
+  code!: string;
 
   @ApiProperty({ enum: PromoType, example: PromoType.PERCENT })
-  type: PromoType;
+  type!: PromoType;
 
   @ApiProperty({ example: '10' })
-  value: string;
+  value!: string;
 }
 
 export class PricingDiscountsDto {
@@ -22,13 +22,13 @@ export class PricingDiscountsDto {
     example: '17.00',
     description: 'Annual billing discount amount (applies only for ANNUAL)',
   })
-  annual: string;
+  annual!: string;
 
   @ApiProperty({
     example: '10.00',
     description: 'Promo discount amount (applies only for MONTHLY)',
   })
-  promo: string;
+  promo!: string;
 
   @ApiProperty({
     type: PromoAppliedDto,
@@ -36,66 +36,66 @@ export class PricingDiscountsDto {
     example: { code: 'WELCOME10', type: PromoType.PERCENT, value: '10' },
     description: 'Applied promo details, if any',
   })
-  promoApplied: PromoAppliedDto | null;
+  promoApplied!: PromoAppliedDto | null;
 
   @ApiProperty({
     nullable: true,
-    example: 'Annual + promo are not combined',
+    example: 'Annual discount cannot be combined with promo codes',
     description: 'Optional note about discount rules',
   })
-  note: string | null;
+  note!: string | null;
 }
 
 export class CreateSubscriptionPricingDto {
   @ApiProperty({ example: '100.00' })
-  subtotal: string;
+  subtotal!: string;
 
   @ApiProperty({ example: '10.00' })
-  discountTotal: string;
+  discountTotal!: string;
 
   @ApiProperty({ example: '90.00' })
-  total: string;
+  total!: string;
 
   @ApiProperty({
     type: PricingDiscountsDto,
     description: 'Discount breakdown',
   })
-  discounts: PricingDiscountsDto;
+  discounts!: PricingDiscountsDto;
 }
 
 export class CreateSubscriptionPaymentDto {
   @ApiProperty({ format: 'uuid' })
-  paymentId: string;
+  paymentId!: string;
 
   @ApiProperty({ enum: PaymentStatus })
-  status: PaymentStatus;
+  status!: PaymentStatus;
 
   @ApiProperty({ example: 'pi_3N8...' })
-  providerRef: string;
+  providerRef!: string;
 
   @ApiProperty({ example: 'https://checkout.stripe.com/...' })
-  checkoutUrl: string;
+  checkoutUrl!: string;
 
   @ApiProperty({ example: 'req_123456' })
-  idempotencyKey: string;
+  idempotencyKey!: string;
 }
 
 export class CreateSubscriptionResponseDto {
   @ApiProperty({ format: 'uuid' })
-  subscriptionId: string;
+  subscriptionId!: string;
 
   @ApiProperty({ enum: SubscriptionStatus })
-  status: SubscriptionStatus;
+  status!: SubscriptionStatus;
 
   @ApiProperty({ enum: PaymentProvider })
-  provider: PaymentProvider;
+  provider!: PaymentProvider;
 
   @ApiProperty({ type: CreateSubscriptionPricingDto })
-  pricing: CreateSubscriptionPricingDto;
+  pricing!: CreateSubscriptionPricingDto;
 
   @ApiProperty({ type: CreateSubscriptionPaymentDto })
-  payment: CreateSubscriptionPaymentDto;
+  payment!: CreateSubscriptionPaymentDto;
 
   @ApiProperty({ example: false })
-  idempotentReplay: boolean;
+  idempotentReplay!: boolean;
 }

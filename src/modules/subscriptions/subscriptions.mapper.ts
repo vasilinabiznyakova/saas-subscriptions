@@ -109,10 +109,10 @@ export function toSubscriptionResponse(
           amount: money(latestPayment.amount),
           currency: latestPayment.currency,
           providerRef: latestPayment.providerRef ?? null,
-          createdAt: latestPayment.createdAt,
+          createdAt: latestPayment.createdAt.toISOString(),
         }
       : null,
 
-    createdAt: model.createdAt,
+    createdAt: model.createdAt.toISOString(),
   };
 }

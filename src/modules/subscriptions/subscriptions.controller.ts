@@ -11,14 +11,17 @@ import {
 import { Request } from 'express';
 
 import {
+  ApiBadRequestResponse,
   ApiBearerAuth,
+  ApiConflictResponse,
   ApiCreatedResponse,
   ApiHeader,
+  ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiParam,
-  ApiResponse,
   ApiTags,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
@@ -30,11 +33,18 @@ import { IdempotencyKey } from '../../common/decorators/idempotency-key.decorato
 
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AuthUser } from '../auth/auth.types';
+import { ErrorResponseDto } from '../../common/dto/error-response.dto';
 
 type AuthedRequest = Request & { user: AuthUser };
 
 @ApiTags('subscriptions')
 @ApiBearerAuth('access-token')
+@ApiHeader({
+  name: 'X-Request-Id',
+  required: false,
+  description:
+    'Optional request correlation id. If not provided, it will be generated.',
+})
 @UseGuards(JwtAuthGuard)
 @Controller('subscriptions')
 export class SubscriptionsController {
@@ -51,8 +61,10 @@ export class SubscriptionsController {
     description: 'Subscription created',
     type: CreateSubscriptionResponseDto,
   })
-  @ApiResponse({ status: 400, description: 'Validation error' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiBadRequestResponse({ type: ErrorResponseDto })
+  @ApiUnauthorizedResponse({ type: ErrorResponseDto })
+  @ApiNotFoundResponse({ type: ErrorResponseDto })
+  @ApiConflictResponse({ type: ErrorResponseDto })
   create(
     @Req() req: AuthedRequest,
     @Body() dto: CreateSubscriptionDto,
@@ -68,7 +80,7 @@ export class SubscriptionsController {
     type: SubscriptionResponseDto,
     isArray: true,
   })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiUnauthorizedResponse({ type: ErrorResponseDto })
   findAll(
     @Req() req: AuthedRequest,
   ): ReturnType<SubscriptionsService['findAll']> {
@@ -82,8 +94,8 @@ export class SubscriptionsController {
     description: 'OK',
     type: SubscriptionResponseDto,
   })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 404, description: 'Not found' })
+  @ApiUnauthorizedResponse({ type: ErrorResponseDto })
+  @ApiNotFoundResponse({ type: ErrorResponseDto })
   findById(
     @Req() req: AuthedRequest,
     @Param('id', new ParseUUIDPipe()) id: string,
