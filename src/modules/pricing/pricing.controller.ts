@@ -12,7 +12,7 @@ import {
 } from '@nestjs/swagger';
 
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { ErrorResponseDto } from '../../common/dto/error-response.dto';
+import { ErrorResponseDto } from 'src/common/dto/error-response.dto';
 
 import { PricingService } from './pricing.service';
 import { CalculatePriceDto } from './dto/calculate-price.dto';

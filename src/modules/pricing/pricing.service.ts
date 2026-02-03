@@ -4,10 +4,10 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { BillingPeriod, Prisma, PromoType } from '@prisma/client';
-import { PrismaService } from '../../database/prisma.service';
+import { PrismaService } from 'src/database/prisma.service';
 import { CalculatePriceDto } from './dto/calculate-price.dto';
 import { PricingResult } from './pricing-result.type';
-import { roundMoney, toMoneyString } from '../../common/utils/money.util';
+import { roundMoney, toMoneyString } from 'src/common/utils/money.util';
 
 const D = Prisma.Decimal;
 const ANNUAL_DISCOUNT_RATE = new D(0.17);

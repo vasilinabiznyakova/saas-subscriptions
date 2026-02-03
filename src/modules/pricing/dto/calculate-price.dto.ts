@@ -10,7 +10,7 @@ import {
   Min,
 } from 'class-validator';
 
-import { normalizeUpperString } from '../../../common/utils/transformers';
+import { normalizeUpperString } from 'src/common/utils/transformers';
 
 export class CalculatePriceDto {
   @ApiProperty({ example: 'STARTER' })

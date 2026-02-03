@@ -12,7 +12,7 @@ import {
 } from 'class-validator';
 import { BillingPeriod } from '@prisma/client';
 
-import { normalizeUpperString } from '../../../common/utils/transformers';
+import { normalizeUpperString } from 'src/common/utils/transformers';
 
 export class CreateSubscriptionDto {
   @ApiProperty({

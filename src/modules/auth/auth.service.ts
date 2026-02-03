@@ -9,11 +9,11 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { Prisma } from '@prisma/client';
 
-import { PrismaService } from '../../database/prisma.service';
+import { PrismaService } from 'src/database/prisma.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
-import { logMeta } from '../../common/utils/logger.utils';
-import { isUniqueViolationOnField } from '../../common/utils/prisma-errors.util';
+import { logMeta } from 'src/common/utils/logger.utils';
+import { isUniqueViolationOnField } from 'src/common/utils/prisma-errors.util';
 
 import { AuthResponse, AuthUser } from './auth.types';
 

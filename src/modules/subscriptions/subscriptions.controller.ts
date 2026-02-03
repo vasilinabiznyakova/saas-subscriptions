@@ -29,11 +29,11 @@ import { CreateSubscriptionResponseDto } from './dto/create-subscription-respons
 import { SubscriptionResponseDto } from './dto/subscription-response.dto';
 
 import { SubscriptionsService } from './subscriptions.service';
-import { IdempotencyKey } from '../../common/decorators/idempotency-key.decorator';
+import { IdempotencyKey } from 'src/common/decorators/idempotency-key.decorator';
 
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AuthUser } from '../auth/auth.types';
-import { ErrorResponseDto } from '../../common/dto/error-response.dto';
+import { ErrorResponseDto } from 'src/common/dto/error-response.dto';
 
 type AuthedRequest = Request & { user: AuthUser };
 

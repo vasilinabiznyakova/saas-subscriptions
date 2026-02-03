@@ -3,7 +3,7 @@ import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Prisma, PromoType, BillingPeriod } from '@prisma/client';
 
 import { PricingService } from './pricing.service';
-import { PrismaService } from '../../database/prisma.service';
+import { PrismaService } from 'src/database/prisma.service';
 
 const D = Prisma.Decimal;
 

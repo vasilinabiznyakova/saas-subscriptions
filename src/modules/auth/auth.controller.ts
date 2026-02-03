@@ -15,7 +15,7 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { AuthResponse } from './auth.types';
 import { AuthResponseDto } from './dto/auth-response.dto';
-import { ErrorResponseDto } from '../../common/dto/error-response.dto';
+import { ErrorResponseDto } from 'src/common/dto/error-response.dto';
 
 @ApiTags('auth')
 @ApiHeader({

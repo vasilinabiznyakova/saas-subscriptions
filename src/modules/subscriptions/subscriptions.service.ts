@@ -12,14 +12,14 @@ import {
   SubscriptionStatus,
 } from '@prisma/client';
 
-import { PrismaService } from '../../database/prisma.service';
+import { PrismaService } from 'src/database/prisma.service';
 import { UsersService } from '../users/users.service';
 import { PricingService } from '../pricing/pricing.service';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { PricingResult } from '../pricing/pricing-result.type';
 import { createPaymentProvider } from '../payments/payment-provider.factory';
-import { logMeta } from '../../common/utils/logger.utils';
-import { isUniqueViolationOnField } from '../../common/utils/prisma-errors.util';
+import { logMeta } from 'src/common/utils/logger.utils';
+import { isUniqueViolationOnField } from 'src/common/utils/prisma-errors.util';
 
 import { SubscriptionResponseDto } from './dto/subscription-response.dto';
 import { toSubscriptionResponse } from './subscriptions.mapper';
