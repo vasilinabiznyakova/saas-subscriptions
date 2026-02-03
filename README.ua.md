@@ -9,7 +9,7 @@ Production-орієнтований backend MVP для SaaS-платформи �
 📄 **Оригінальний опис завдання:**  
 👉 [ASSIGNMENT.md](./ASSIGNMENT.md)
 
-🧠 **Теоретичне завдання:**  
+🧠 **Відповіді на теоретичні запитання:**  
 👉 [THEORY.md](./THEORY.md)  
 👉 [THEORY_UA.md](./THEORY_UA.md)
 
