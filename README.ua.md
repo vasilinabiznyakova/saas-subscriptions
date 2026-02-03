@@ -11,7 +11,7 @@ Production-орієнтований backend MVP для SaaS-платформи �
 
 🧠 **Відповіді на теоретичні запитання:**  
 👉 [THEORY.md](./THEORY.md)  
-👉 [THEORY_UA.md](./THEORY_UA.md)
+👉 [THEORY_UA.md](./THEORY.ua.md)
 
 ---
 
