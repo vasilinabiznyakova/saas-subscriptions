@@ -18,7 +18,7 @@ export class AuthUserDto {
     format: 'date-time',
     example: '2026-01-31T19:53:58.100Z',
   })
-  createdAt!: Date;
+  createdAt!: string;
 }
 
 export class AuthResponseDto {
