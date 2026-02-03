@@ -69,7 +69,158 @@ Register → Login → Calculate Price → Create Subscription
 - Unit tests are implemented only for `PricingService`, as it represents the most critical and deterministic business logic.
 - Swagger is used for API documentation and contract verification.
 
+### Graceful Shutdown
+
+The application supports graceful shutdown to ensure correct behavior during restarts, deployments, or rollbacks  
+(Docker / CI / Kubernetes).
+
+In `main.ts`, the following is enabled:
+
+- `app.enableShutdownHooks()`
+
+On application shutdown:
+
+- All database connections are properly closed
+- PrismaClient and the PostgreSQL connection pool are shut down gracefully
+
+This allows:
+- preventing connection leaks
+- safe deployments and rollbacks
+- improved production stability
+
 ---
+
+### Database Access: Prisma + PostgreSQL Pool (config-first)
+
+The project uses Prisma ORM v7 in **config-first** mode with explicit PostgreSQL connection pool management.
+
+Implementation details:
+- `PrismaService` extends `PrismaClient`
+- A custom `pg.Pool` is created using `DATABASE_URL`
+- The pool is passed to Prisma via `@prisma/adapter-pg`
+- On shutdown:
+  - `prisma.$disconnect()` is called
+  - the `pg.Pool` is properly closed
+
+This approach ensures:
+- predictable connection behavior
+- controlled database lifecycle
+- correct operation during graceful shutdown
+
+---
+
+### Singleton PrismaService via Global DatabaseModule
+
+To avoid creating multiple instances of `PrismaClient` (and multiple connection pools),  
+database access logic is extracted into a dedicated global module.
+
+Solution:
+- `DatabaseModule` is marked with `@Global()`
+- `PrismaService` is declared only once in this module’s providers
+- Feature modules do not create their own PrismaService instances
+
+This allows:
+- guaranteeing a single PrismaClient across the application
+- avoiding excessive database connections
+- reducing the risk of hidden runtime issues in a modular NestJS architecture
+
+---
+
+### Global Validation and Error Handling
+
+Request validation is performed globally using `ValidationPipe`, keeping controllers clean  
+and enforcing strict API contracts.
+
+Configuration:
+- `whitelist: true`
+- `forbidNonWhitelisted: true`
+- `transform: true`
+- `enableImplicitConversion: true`
+
+Business logic and authorization errors are returned with appropriate HTTP status codes  
+(e.g. `401 Unauthorized`, `403 Forbidden`, `409 Conflict`).
+
+Internal errors do not expose implementation details or database structure.
+
+---
+
+### Correlation ID in API Responses
+
+The system uses a correlation ID to identify and trace each HTTP request.
+
+The same identifier is exposed in two forms:
+- `X-Request-Id` — HTTP response header
+- `requestId` — included in error response bodies
+
+Both fields contain the same value and represent a single request.
+
+#### X-Request-Id (HTTP Header)
+
+`X-Request-Id` is used for transport-level concerns:
+- correlating backend logs
+- integration with proxies, API gateways, or load balancers
+- request tracing regardless of response format
+
+As an HTTP header, it is available for all responses.
+
+#### requestId (Response Body)
+
+`requestId` is included **only in error responses** as part of the API contract.
+
+It is intended for:
+- frontend clients
+- application-level error logging or display
+- diagnostics and support
+
+Including `requestId` in the body allows clients to access the identifier  
+without relying on HTTP headers.
+
+#### Usage by Layer
+
+| Layer | Field |
+|------|-------|
+| HTTP / Infrastructure | `X-Request-Id` |
+| Backend logging | `X-Request-Id` |
+| Frontend / UI | `requestId` |
+| Error diagnostics | both |
+
+#### Generation and Propagation
+
+- If the client provides `X-Request-Id`, it is reused
+- If not provided, the backend generates one
+- For error responses, the correlation ID is always present:
+  - in headers (`X-Request-Id`)
+  - in the response body (`requestId`)
+
+This ensures consistent and predictable API behavior.
+
+---
+
+### Why requestId Is Not Included in Successful Responses
+
+`requestId` is intentionally not added to successful response bodies.
+
+Reasons:
+- API contracts remain clean and focused on business data
+- frontend clients are not forced to handle service fields in every DTO
+- future API evolution (GraphQL, gRPC, events) is simplified
+
+At the same time:
+- `X-Request-Id` is always available in response headers
+- error responses include additional diagnostic metadata
+
+---
+
+### Correlation ID Summary
+
+| Scenario | Correlation ID location |
+|--------|--------------------------|
+| Successful response | response headers |
+| Error response | headers + body |
+| Swagger | documented as optional header |
+
+---
+
 
 ## Pricing & Discounts
 
