@@ -1,12 +1,15 @@
 import { PaymentProvider } from '../payment-provider.interface';
 
 export class PixMockProvider implements PaymentProvider {
-  async initPayment(_params: { amount: string; currency: string }) {
-    const providerRef = `mono_${Date.now()}`;
+  async initPayment(): Promise<{
+    providerRef: string;
+    checkoutUrl: string;
+  }> {
+    const ref = `pix_${Date.now()}`;
 
     return {
-      providerRef,
-      checkoutUrl: `https://mock.monobank/checkout/${providerRef}`,
+      providerRef: ref,
+      checkoutUrl: `https://mock.pix/checkout/${ref}`,
     };
   }
 }
