@@ -11,7 +11,7 @@ and a reliable API without unnecessary overengineering.
 
 🧠 **Answers to theoretical questions:**  
 👉 [THEORY.md](./THEORY.md)  
-👉 [THEORY_UA.md](./THEORY.ua.md)
+👉 [THEORY.ua.md](./THEORY.ua.md)
 ---
 
 ## Technology Stack
