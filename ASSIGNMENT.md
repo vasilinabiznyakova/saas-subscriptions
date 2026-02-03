@@ -70,6 +70,68 @@ Register → Login → Calculate Price → Subscribe
 - Docker (optional)
 
 ---
+## Теоретичне завдання
+### 1. Міграція legacy PostgreSQL системи
+
+У вас є legacy система з PostgreSQL базою даних. Бізнес вирішив перейти на нову архітектуру з оновленою схемою даних.
+
+**Вимоги:**
+- Zero downtime — система має працювати безперервно
+- Можливість rollback — повернення до попереднього стану
+- Консистентність даних — жодних втрачених або дубльованих даних
+
+**Опишіть:**
+- стратегію міграції,
+- як забезпечите консистентність даних,
+- як будете валідувати результат,
+- які rollback механізми передбачите.
+
+---
+
+### 2. Конкурентна покупка товару з обмеженою кількістю
+
+На сайті існують товари з обмеженою кількістю. Два користувачі одночасно намагаються купити останній товар на складі. Обидва бачать «1 шт. в наявності» і натискають «Оплатити».
+
+**Опишіть:**
+- які проблеми можуть виникнути,
+- як би ви архітектурно вирішили цю задачу (мінімум 2 підходи).
+
+---
+
+### 3. Баг у калькуляторі знижок
+
+Виявили баг у калькуляторі знижок, який існував 3 тижні. За цей час 12,000 замовлень отримали неправильну знижку:
+- ~8,000 переплатили (в середньому $5),
+- ~4,000 недоплатили (в середньому $8).
+
+**Опишіть:**
+- технічний підхід до виявлення affected замовлень,
+- як автоматизувати refunds/charges з урахуванням того, що частина карток вже expired,
+- як комунікувати з клієнтами,
+- як запобігти подібному в майбутньому.
+
+---
+
+### 4. Multi-tenant SaaS e-commerce платформа
+
+Ви будуєте e-commerce платформу як SaaS. Кожен клієнт (merchant) має свій магазин.  
+Очікується:
+- ~500 merchants,
+- ~10,000 товарів у кожного,
+- ~1,000 замовлень на день на merchant.
+
+Деякі merchants хочуть кастомну бізнес-логіку (свої формули знижок, інтеграції).
+
+**Опишіть архітектуру:**
+- одна БД чи database-per-tenant,
+- як ізолювати дані між merchants,
+- як реалізувати кастомізацію без форків коду,
+- де межа між shared і isolated компонентами,
+- як масштабувати, коли один merchant виросте в 100x.
+
+---
+
+
 
 ## 🇬🇧 Assignment Description (English)
 
@@ -139,3 +201,67 @@ The expected result is a monolithic mini-app built with **NestJS** that implemen
 - **Swagger UI** available at `/api/docs` (optional)
 - Docker support (optional)
 
+
+---
+
+## Theoretical Assignment
+
+### 1. Legacy PostgreSQL Migration
+
+You have a legacy system with a PostgreSQL database. The business has decided to migrate to a new architecture with an updated data schema.
+
+**Requirements:**
+- Zero downtime — the system must remain fully operational
+- Rollback capability — ability to return to the previous state
+- Data consistency — no lost or duplicated data
+
+**Describe:**
+- the migration strategy,
+- how data consistency is ensured,
+- how the result is validated,
+- which rollback mechanisms are planned.
+
+---
+
+### 2. Concurrent Purchase of Limited Inventory
+
+The system has products with limited stock. Two users simultaneously attempt to purchase the last available item. Both see “1 item in stock” and click “Pay”.
+
+**Describe:**
+- what problems may occur,
+- how you would solve this architecturally (at least two approaches).
+
+---
+
+### 3. Discount Calculator Bug
+
+A bug in the discount calculator existed for 3 weeks. During this time, 12,000 orders received incorrect discounts:
+- ~8,000 customers overpaid (average $5),
+- ~4,000 customers underpaid (average $8).
+
+**Describe:**
+- the technical approach to identifying affected orders,
+- how to automate refunds/charges considering that some cards have expired,
+- how to communicate with customers,
+- how to prevent similar issues in the future.
+
+---
+
+### 4. Multi-tenant SaaS E-commerce Platform
+
+You are building an e-commerce platform as a SaaS. Each client (merchant) has their own store.  
+Expected scale:
+- ~500 merchants,
+- ~10,000 products per merchant,
+- ~1,000 orders per merchant per day.
+
+Some merchants require custom business logic (custom discount formulas, integrations).
+
+**Describe the architecture:**
+- single database vs database-per-tenant,
+- data isolation between merchants,
+- how to implement customization without code forks,
+- boundaries between shared and isolated components,
+- how to scale when one merchant grows 100x.
+
+---
