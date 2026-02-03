@@ -10,7 +10,6 @@ if (!process.env.DATABASE_URL) {
 import { PrismaClient, PromoType } from '@prisma/client';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
-import bcrypt from 'bcrypt';
 
 // Create a PG pool and Prisma adapter (Prisma 7 config-first requirement)
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
@@ -57,24 +56,6 @@ async function main() {
     },
   ] as const;
 
-  const testUsers = [
-    {
-      email: 'dev.ua@example.com',
-      region: 'UA',
-      password: 'DevPassword123!',
-    },
-    {
-      email: 'dev.br@example.com',
-      region: 'BR',
-      password: 'DevPassword123!',
-    },
-    {
-      email: 'dev.other@example.com',
-      region: 'US',
-      password: 'DevPassword123!',
-    },
-  ] as const;
-
   await prisma.$transaction(async (tx) => {
     await Promise.all(
       plans.map((p) =>
@@ -115,31 +96,9 @@ async function main() {
         }),
       ),
     );
-
-    // // Dev users
-    // await Promise.all(
-    //   testUsers.map(async (u) => {
-    //     const passwordHash = await bcrypt.hash(u.password, 10);
-
-    //     return tx.user.upsert({
-    //       where: { email: u.email },
-    //       update: {
-    //         region: u.region,
-    //         passwordHash,
-    //         isActive: true,
-    //       },
-    //       create: {
-    //         email: u.email,
-    //         region: u.region,
-    //         passwordHash,
-    //         isActive: true,
-    //       },
-    //     });
-    //   }),
-    // );
   });
 
-  const [plansCount, promoCount, usersCount] = await Promise.all([
+  const [plansCount, promoCount] = await Promise.all([
     prisma.plan.count(),
     prisma.promoCode.count(),
     prisma.user.count(),
@@ -148,11 +107,6 @@ async function main() {
   console.log('✅ Seed completed successfully');
   console.log(`Plans in DB: ${plansCount}`);
   console.log(`Promo codes in DB: ${promoCount}`);
-  console.log(`Users in DB: ${usersCount}`);
-  console.log(
-    'Test users: dev.ua@example.com, dev.br@example.com, dev.other@example.com',
-  );
-  console.log('Password for all: DevPassword123!');
 }
 
 main()

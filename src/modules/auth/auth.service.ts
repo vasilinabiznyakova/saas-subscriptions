@@ -3,6 +3,7 @@ import {
   Injectable,
   Logger,
   UnauthorizedException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
@@ -78,7 +79,7 @@ export class AuthService {
           error: e instanceof Error ? e.message : String(e),
         }),
       );
-      throw e;
+      throw new InternalServerErrorException('Registration failed');
     }
   }
 
