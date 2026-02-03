@@ -1,5 +1,5 @@
 import { Test } from '@nestjs/testing';
-import { BadRequestException } from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Prisma, PromoType, BillingPeriod } from '@prisma/client';
 
 import { PricingService } from './pricing.service';
@@ -70,7 +70,7 @@ describe('PricingService', () => {
       seats: 3,
     });
 
-    // 99.49 + 15.75*3 = 99.49 + 47.25 = 146.74
+    // 99.49 + 15.75*3 = 146.74
     expect(res.subtotal).toBe('146.74');
     expect(res.discountTotal).toBe('0.00');
     expect(res.total).toBe('146.74');
@@ -91,7 +91,7 @@ describe('PricingService', () => {
     });
 
     // subtotal = 299.90 + 12.30*2 = 324.50
-    // annual discount = 17% of 324.50 = 55.165 -> 55.17 (HALF_UP)
+    // annual discount = 17% of 324.50 = 55.165 -> 55.17
     // total = 324.50 - 55.17 = 269.33
     expect(res.subtotal).toBe('324.50');
     expect(res.discounts.annual).toBe('55.17');
@@ -125,12 +125,12 @@ describe('PricingService', () => {
 
     // subtotal = 99.49 + 15.75*1 = 115.24
     // promo 10% = 11.524 -> 11.52
-    // total = 115.24 - 11.52 = 103.72
+    // total = 103.72
     expect(monthly.subtotal).toBe('115.24');
     expect(monthly.discounts.promo).toBe('11.52');
     expect(monthly.total).toBe('103.72');
 
-    // annual with promo should ignore promo
+    // annual with promo → promo ignored
     const annual = await service.calculate({
       planCode: 'PROFESSIONAL',
       billingPeriod: BillingPeriod.ANNUAL,
@@ -138,7 +138,6 @@ describe('PricingService', () => {
       promoCode: 'WELCOME10',
     });
 
-    // promo ignored
     expect(annual.discounts.promo).toBe('0.00');
     expect(annual.discounts.promoApplied).toBeNull();
     expect(annual.discounts.note).toBe(
@@ -146,7 +145,7 @@ describe('PricingService', () => {
     );
   });
 
-  it('throws on invalid promo code (monthly)', async () => {
+  it('throws NotFoundException on unknown promo code (monthly)', async () => {
     prismaMock.plan.findUnique.mockResolvedValue({
       code: 'STARTER',
       basePriceMonthly: new D('29.99'),
@@ -163,10 +162,36 @@ describe('PricingService', () => {
         seats: 1,
         promoCode: 'NOPE',
       }),
-    ).rejects.toBeInstanceOf(BadRequestException);
+    ).rejects.toBeInstanceOf(NotFoundException);
   });
 
-  it('allows seats = 0 (e.g. Starter) and calculates price correctly', async () => {
+  it('throws ConflictException on inactive or expired promo code (monthly)', async () => {
+    prismaMock.plan.findUnique.mockResolvedValue({
+      code: 'STARTER',
+      basePriceMonthly: new D('29.99'),
+      pricePerSeatMonthly: null,
+      includedApiCalls: 1000,
+    });
+
+    prismaMock.promoCode.findUnique.mockResolvedValue({
+      code: 'WELCOME10',
+      type: PromoType.PERCENT,
+      value: new D('10'),
+      isActive: false,
+      expiresAt: null,
+    });
+
+    await expect(
+      service.calculate({
+        planCode: 'STARTER',
+        billingPeriod: BillingPeriod.MONTHLY,
+        seats: 1,
+        promoCode: 'WELCOME10',
+      }),
+    ).rejects.toBeInstanceOf(ConflictException);
+  });
+
+  it('allows seats = 0 and calculates price correctly', async () => {
     prismaMock.plan.findUnique.mockResolvedValue({
       code: 'STARTER',
       basePriceMonthly: new D('29.99'),
@@ -194,7 +219,6 @@ describe('PricingService', () => {
     expect(res.discountTotal).toBe('3.00');
     expect(res.total).toBe('26.99');
 
-    // promoApplied should be set for monthly promo
     expect(res.discounts.promoApplied).toEqual({
       code: 'WELCOME10',
       type: PromoType.PERCENT,

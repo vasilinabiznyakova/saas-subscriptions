@@ -1,5 +1,9 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
-import { Prisma, PromoType } from '@prisma/client';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { BillingPeriod, Prisma, PromoType } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { CalculatePriceDto } from './dto/calculate-price.dto';
 import { PricingResult } from './pricing-result.type';
@@ -23,7 +27,7 @@ export class PricingService {
     });
 
     if (!plan) {
-      throw new BadRequestException('Unknown plan');
+      throw new NotFoundException('Plan not found');
     }
 
     const seats = dto.seats ?? 0;
@@ -32,7 +36,7 @@ export class PricingService {
     const perSeat = plan.pricePerSeatMonthly ?? new D(0);
     const subtotal = roundMoney(plan.basePriceMonthly.add(perSeat.mul(seats)));
 
-    const isAnnual = dto.billingPeriod === 'ANNUAL';
+    const isAnnual = dto.billingPeriod === BillingPeriod.ANNUAL;
 
     // Business rule: annual discount and promo code cannot be combined.
     const annualDiscount = isAnnual
@@ -56,11 +60,15 @@ export class PricingService {
         },
       });
 
-      const now = new Date();
-      const isExpired = promo?.expiresAt ? promo.expiresAt < now : false;
+      if (!promo) {
+        throw new NotFoundException('Promo code not found');
+      }
 
-      if (!promo || !promo.isActive || isExpired) {
-        throw new BadRequestException('Invalid promo code');
+      const now = new Date();
+      const isExpired = promo.expiresAt ? promo.expiresAt < now : false;
+
+      if (!promo.isActive || isExpired) {
+        throw new ConflictException('Promo code is not applicable');
       }
 
       promoApplied = {

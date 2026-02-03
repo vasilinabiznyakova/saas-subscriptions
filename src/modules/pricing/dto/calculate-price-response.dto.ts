@@ -25,7 +25,6 @@ class PricingDiscountsDto {
   @ApiProperty({
     example: 'Annual discount cannot be combined with promo codes',
     nullable: true,
-    required: false,
   })
   note!: string | null;
 }

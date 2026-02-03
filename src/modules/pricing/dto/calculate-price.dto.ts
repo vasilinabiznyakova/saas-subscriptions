@@ -1,16 +1,22 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform, TransformFnParams } from 'class-transformer';
 import { BillingPeriod } from '@prisma/client';
-import { IsEnum, IsInt, IsOptional, IsString, Min } from 'class-validator';
+import {
+  IsEnum,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
 
-function normalizeUpperString(value: unknown): unknown {
-  return typeof value === 'string' ? value.trim().toUpperCase() : value;
-}
+import { normalizeUpperString } from '../../../common/utils/transformers';
 
 export class CalculatePriceDto {
   @ApiProperty({ example: 'STARTER' })
   @Transform(({ value }: TransformFnParams) => normalizeUpperString(value))
   @IsString()
+  @IsNotEmpty()
   planCode!: string;
 
   @ApiProperty({ enum: BillingPeriod, example: BillingPeriod.MONTHLY })
@@ -20,17 +26,17 @@ export class CalculatePriceDto {
 
   @ApiProperty({ example: 3, required: false, nullable: true })
   @Transform(({ value }: TransformFnParams) => {
-    // allow seats to be omitted -> default 0 (чтобы не падать)
-    if (value === undefined || value === null || value === '') return 0;
+    if (value === undefined || value === null) return undefined;
+    if (typeof value === 'string' && value.trim() === '') return undefined;
 
-    // accept numeric strings like "3"
-    if (typeof value === 'string') {
-      const n = Number(value.trim());
-      return Number.isFinite(n) ? n : value;
-    }
+    const n =
+      typeof value === 'number'
+        ? value
+        : typeof value === 'string'
+          ? Number(value.trim())
+          : NaN;
 
-    // leave numbers as-is; other types will be rejected by validators
-    return value;
+    return Number.isFinite(n) ? n : undefined;
   })
   @IsOptional()
   @IsInt()
